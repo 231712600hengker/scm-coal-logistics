@@ -10,10 +10,25 @@ use Illuminate\Http\Request;
 
 class PurchaseOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $purchaseOrders = PurchaseOrder::with(['supplier', 'coalProduct'])->latest()->paginate(10);
-        return view('purchase-orders.index', compact('purchaseOrders'));
+        $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString();
+
+        $purchaseOrders = PurchaseOrder::with(['supplier', 'coalProduct'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('po_number', 'like', "%{$search}%")
+                        ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('coalProduct', fn ($product) => $product->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('purchase-orders.index', compact('purchaseOrders', 'search', 'status'));
     }
 
     public function create()
@@ -27,7 +42,7 @@ class PurchaseOrderController extends Controller
         $validated['total_amount'] = $validated['quantity'] * $validated['price_per_ton'];
         $purchaseOrder = PurchaseOrder::create($validated);
         $this->receiveStockIfNeeded($purchaseOrder);
-        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order berhasil ditambahkan.');
+        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order has been created successfully.');
     }
 
     public function show(PurchaseOrder $purchaseOrder)
@@ -47,13 +62,13 @@ class PurchaseOrderController extends Controller
         $validated['total_amount'] = $validated['quantity'] * $validated['price_per_ton'];
         $purchaseOrder->update($validated);
         $this->receiveStockIfNeeded($purchaseOrder->fresh());
-        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order berhasil diperbarui.');
+        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order has been updated successfully.');
     }
 
     public function destroy(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->delete();
-        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order berhasil dihapus.');
+        return redirect()->route('purchase-orders.index')->with('success', 'Purchase order has been deleted successfully.');
     }
 
     private function validateData(Request $request, ?int $id = null): array
@@ -66,6 +81,23 @@ class PurchaseOrderController extends Controller
             'quantity' => 'required|numeric|min:0.01',
             'price_per_ton' => 'required|numeric|min:0',
             'status' => 'required|in:pending,approved,received,cancelled',
+        ], [
+            'po_number.required' => 'PO number is required.',
+            'po_number.unique' => 'This PO number already exists. Please use a different number.',
+            'supplier_id.required' => 'Please select a supplier.',
+            'supplier_id.exists' => 'The selected supplier is not available.',
+            'coal_product_id.required' => 'Please select a coal product.',
+            'coal_product_id.exists' => 'The selected coal product is not available.',
+            'order_date.required' => 'Order date is required.',
+            'order_date.date' => 'Order date must be a valid date.',
+            'quantity.required' => 'Quantity is required.',
+            'quantity.numeric' => 'Quantity must be a valid number.',
+            'quantity.min' => 'Quantity must be greater than zero.',
+            'price_per_ton.required' => 'Price per ton is required.',
+            'price_per_ton.numeric' => 'Price per ton must be a valid number.',
+            'price_per_ton.min' => 'Price per ton cannot be negative.',
+            'status.required' => 'Please select a purchase order status.',
+            'status.in' => 'Purchase order status is invalid.',
         ]);
     }
 
