@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title', 'Purchase Order Detail')
+@section('content')
+<div class="rounded-xl border bg-white p-6 shadow-sm"><div class="grid gap-4 md:grid-cols-2">
+<div><p class="text-sm text-gray-500">PO Number</p><p class="font-semibold">{{ $purchaseOrder->po_number }}</p></div><div><p class="text-sm text-gray-500">Supplier</p><p class="font-semibold">{{ $purchaseOrder->supplier->name ?? '-' }}</p></div><div><p class="text-sm text-gray-500">Coal Product</p><p class="font-semibold">{{ $purchaseOrder->coalProduct->name ?? '-' }}</p></div><div><p class="text-sm text-gray-500">Order Date</p><p class="font-semibold">{{ $purchaseOrder->order_date }}</p></div><div><p class="text-sm text-gray-500">Quantity</p><p class="font-semibold">{{ number_format($purchaseOrder->quantity,2) }}</p></div><div><p class="text-sm text-gray-500">Price Per Ton</p><p class="font-semibold">{{ number_format($purchaseOrder->price_per_ton,2) }}</p></div><div><p class="text-sm text-gray-500">Total Amount</p><p class="font-semibold">{{ number_format($purchaseOrder->total_amount,2) }}</p></div><div><p class="text-sm text-gray-500">Status</p><p class="font-semibold capitalize">{{ $purchaseOrder->status }}</p></div>
+</div><div class="mt-6 flex gap-2"><a href="{{ route('purchase-orders.edit',$purchaseOrder) }}" class="rounded bg-gray-900 px-4 py-2 text-white">Edit</a><a href="{{ route('purchase-orders.index') }}" class="rounded border px-4 py-2">Back</a></div></div>
+@endsection
