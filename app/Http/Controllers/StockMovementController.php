@@ -9,21 +9,22 @@ class StockMovementController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->string('search')->toString();
+        $search = trim($request->string('search')->toString());
         $type = $request->string('type')->toString();
 
-        $query = StockMovement::with('coalProduct');
-
-        if ($search !== '') {
-            $query->where('reference_type', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%");
-        }
-
-        if ($type !== '') {
-            $query->where('type', $type);
-        }
-
-        $stockMovements = $query->latest()->paginate(10)->withQueryString();
+        $stockMovements = StockMovement::with('coalProduct')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('reference_type', 'like', "%{$search}%")
+                        ->orWhere('reference_id', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('coalProduct', fn ($product) => $product->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($type, fn ($query) => $query->where('type', $type))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('stock-movements.index', compact('stockMovements', 'search', 'type'));
     }
