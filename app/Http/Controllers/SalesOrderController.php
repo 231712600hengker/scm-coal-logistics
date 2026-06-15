@@ -11,10 +11,25 @@ use Illuminate\Validation\ValidationException;
 
 class SalesOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $salesOrders = SalesOrder::with(['customer', 'coalProduct'])->latest()->paginate(10);
-        return view('sales-orders.index', compact('salesOrders'));
+        $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString();
+
+        $salesOrders = SalesOrder::with(['customer', 'coalProduct'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('so_number', 'like', "%{$search}%")
+                        ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('coalProduct', fn ($product) => $product->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('sales-orders.index', compact('salesOrders', 'search', 'status'));
     }
 
     public function create()
@@ -29,7 +44,7 @@ class SalesOrderController extends Controller
         $this->ensureStockAvailable($validated);
         $salesOrder = SalesOrder::create($validated);
         $this->releaseStockIfNeeded($salesOrder);
-        return redirect()->route('sales-orders.index')->with('success', 'Sales order berhasil ditambahkan.');
+        return redirect()->route('sales-orders.index')->with('success', 'Sales order has been created successfully.');
     }
 
     public function show(SalesOrder $salesOrder)
@@ -51,13 +66,13 @@ class SalesOrderController extends Controller
         if (! $hasMovement) $this->ensureStockAvailable($validated);
         $salesOrder->update($validated);
         $this->releaseStockIfNeeded($salesOrder->fresh());
-        return redirect()->route('sales-orders.index')->with('success', 'Sales order berhasil diperbarui.');
+        return redirect()->route('sales-orders.index')->with('success', 'Sales order has been updated successfully.');
     }
 
     public function destroy(SalesOrder $salesOrder)
     {
         $salesOrder->delete();
-        return redirect()->route('sales-orders.index')->with('success', 'Sales order berhasil dihapus.');
+        return redirect()->route('sales-orders.index')->with('success', 'Sales order has been deleted successfully.');
     }
 
     private function validateData(Request $request, ?int $id = null): array
@@ -70,6 +85,23 @@ class SalesOrderController extends Controller
             'quantity' => 'required|numeric|min:0.01',
             'price_per_ton' => 'required|numeric|min:0',
             'status' => 'required|in:pending,approved,shipped,completed,cancelled',
+        ], [
+            'so_number.required' => 'SO number is required.',
+            'so_number.unique' => 'This SO number already exists. Please use a different number.',
+            'customer_id.required' => 'Please select a customer.',
+            'customer_id.exists' => 'The selected customer is not available.',
+            'coal_product_id.required' => 'Please select a coal product.',
+            'coal_product_id.exists' => 'The selected coal product is not available.',
+            'order_date.required' => 'Order date is required.',
+            'order_date.date' => 'Order date must be a valid date.',
+            'quantity.required' => 'Quantity is required.',
+            'quantity.numeric' => 'Quantity must be a valid number.',
+            'quantity.min' => 'Quantity must be greater than zero.',
+            'price_per_ton.required' => 'Price per ton is required.',
+            'price_per_ton.numeric' => 'Price per ton must be a valid number.',
+            'price_per_ton.min' => 'Price per ton cannot be negative.',
+            'status.required' => 'Please select a sales order status.',
+            'status.in' => 'Sales order status is invalid.',
         ]);
     }
 
@@ -78,7 +110,7 @@ class SalesOrderController extends Controller
         if (! in_array($data['status'], ['shipped', 'completed'])) return;
         $product = CoalProduct::findOrFail($data['coal_product_id']);
         if ($data['quantity'] > $product->stock_qty) {
-            throw ValidationException::withMessages(['quantity' => 'Quantity melebihi stok tersedia.']);
+            throw ValidationException::withMessages(['quantity' => 'Insufficient stock. Available stock for ' . $product->name . ' is ' . number_format($product->stock_qty, 2) . ' ' . $product->unit . '.']);
         }
     }
 
