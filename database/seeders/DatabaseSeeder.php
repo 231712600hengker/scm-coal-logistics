@@ -17,24 +17,103 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([SupplierSeeder::class, CustomerSeeder::class, CoalProductSeeder::class]);
 
-        $supplier1 = Supplier::where('supplier_code', 'SUP-001')->first();
-        $supplier2 = Supplier::where('supplier_code', 'SUP-002')->first();
-        $customer1 = Customer::where('customer_code', 'CUS-001')->first();
-        $customer2 = Customer::where('customer_code', 'CUS-002')->first();
-        $coal1 = CoalProduct::where('product_code', 'COAL-001')->first();
-        $coal2 = CoalProduct::where('product_code', 'COAL-002')->first();
-        $coal3 = CoalProduct::where('product_code', 'COAL-003')->first();
+        $suppliers = Supplier::orderBy('id')->get();
+        $customers = Customer::orderBy('id')->get();
+        $products = CoalProduct::orderBy('id')->get();
 
-        $po1 = PurchaseOrder::create(['po_number' => 'PO-2026-001', 'supplier_id' => $supplier1->id, 'coal_product_id' => $coal1->id, 'order_date' => '2026-06-01', 'quantity' => 1500, 'price_per_ton' => 750000, 'total_amount' => 1125000000, 'status' => 'received']);
-        $po2 = PurchaseOrder::create(['po_number' => 'PO-2026-002', 'supplier_id' => $supplier2->id, 'coal_product_id' => $coal2->id, 'order_date' => '2026-06-04', 'quantity' => 1000, 'price_per_ton' => 850000, 'total_amount' => 850000000, 'status' => 'approved']);
+        $purchaseStatuses = ['received', 'approved', 'pending', 'received', 'cancelled'];
+        $salesStatuses = ['completed', 'shipped', 'approved', 'pending', 'cancelled'];
+        $shipmentStatuses = ['delivered', 'in_transit', 'scheduled', 'delivered', 'cancelled'];
 
-        $so1 = SalesOrder::create(['so_number' => 'SO-2026-001', 'customer_id' => $customer1->id, 'coal_product_id' => $coal1->id, 'order_date' => '2026-06-07', 'quantity' => 600, 'price_per_ton' => 950000, 'total_amount' => 570000000, 'status' => 'shipped']);
-        $so2 = SalesOrder::create(['so_number' => 'SO-2026-002', 'customer_id' => $customer2->id, 'coal_product_id' => $coal3->id, 'order_date' => '2026-06-09', 'quantity' => 250, 'price_per_ton' => 1100000, 'total_amount' => 275000000, 'status' => 'pending']);
+        $receivedPurchaseOrders = [];
+        $fulfilledSalesOrders = [];
+        $salesOrdersForShipment = [];
 
-        Shipment::create(['shipment_number' => 'SHIP-2026-001', 'sales_order_id' => $so1->id, 'vehicle_number' => 'KT 8123 CL', 'driver_name' => 'Rahmat Hidayat', 'shipment_date' => '2026-06-10', 'origin' => 'Samarinda Stockyard', 'destination' => 'Cilegon Plant', 'status' => 'in_transit']);
-        Shipment::create(['shipment_number' => 'SHIP-2026-002', 'sales_order_id' => $so2->id, 'vehicle_number' => 'DA 4451 CA', 'driver_name' => 'Arman Putra', 'shipment_date' => '2026-06-12', 'origin' => 'Banjarmasin Port', 'destination' => 'Gresik Plant', 'status' => 'scheduled']);
+        for ($i = 1; $i <= 20; $i++) {
+            $product = $products[($i - 1) % $products->count()];
+            $supplier = $suppliers[($i - 1) % $suppliers->count()];
+            $quantity = 500 + ($i * 75);
+            $pricePerTon = 650000 + ($i * 12500);
+            $status = $purchaseStatuses[($i - 1) % count($purchaseStatuses)];
 
-        StockMovement::create(['coal_product_id' => $coal1->id, 'type' => 'in', 'quantity' => 1500, 'reference_type' => 'purchase_order', 'reference_id' => $po1->id, 'description' => 'Initial received stock from PO-2026-001']);
-        StockMovement::create(['coal_product_id' => $coal1->id, 'type' => 'out', 'quantity' => 600, 'reference_type' => 'sales_order', 'reference_id' => $so1->id, 'description' => 'Initial shipped stock for SO-2026-001']);
+            $purchaseOrder = PurchaseOrder::create([
+                'po_number' => sprintf('PO-2026-%03d', $i),
+                'supplier_id' => $supplier->id,
+                'coal_product_id' => $product->id,
+                'order_date' => now()->subDays(45 - $i)->toDateString(),
+                'quantity' => $quantity,
+                'price_per_ton' => $pricePerTon,
+                'total_amount' => $quantity * $pricePerTon,
+                'status' => $status,
+            ]);
+
+            if ($status === 'received') {
+                $product->increment('stock_qty', $quantity);
+                $receivedPurchaseOrders[] = [$purchaseOrder, $product, $quantity];
+            }
+        }
+
+        for ($i = 1; $i <= 20; $i++) {
+            $product = $products[($i - 1) % $products->count()];
+            $customer = $customers[($i - 1) % $customers->count()];
+            $quantity = 120 + ($i * 18);
+            $pricePerTon = 850000 + ($i * 15000);
+            $status = $salesStatuses[($i - 1) % count($salesStatuses)];
+
+            $salesOrder = SalesOrder::create([
+                'so_number' => sprintf('SO-2026-%03d', $i),
+                'customer_id' => $customer->id,
+                'coal_product_id' => $product->id,
+                'order_date' => now()->subDays(30 - $i)->toDateString(),
+                'quantity' => $quantity,
+                'price_per_ton' => $pricePerTon,
+                'total_amount' => $quantity * $pricePerTon,
+                'status' => $status,
+            ]);
+
+            if (in_array($status, ['shipped', 'completed'], true)) {
+                $product->decrement('stock_qty', $quantity);
+                $fulfilledSalesOrders[] = [$salesOrder, $product, $quantity];
+            }
+
+            if ($status !== 'cancelled') {
+                $salesOrdersForShipment[] = $salesOrder;
+            }
+        }
+
+        foreach ($salesOrdersForShipment as $index => $salesOrder) {
+            Shipment::create([
+                'shipment_number' => sprintf('SHIP-2026-%03d', $index + 1),
+                'sales_order_id' => $salesOrder->id,
+                'vehicle_number' => 'TRK ' . str_pad((string) ($8100 + $index), 4, '0', STR_PAD_LEFT) . ' CL',
+                'driver_name' => ['Rahmat Hidayat', 'Arman Putra', 'Doni Saputra', 'Fahri Akbar', 'Rizky Maulana'][$index % 5],
+                'shipment_date' => now()->subDays(18 - $index)->toDateString(),
+                'origin' => ['Samarinda Stockyard', 'Banjarmasin Port', 'Balikpapan Hub', 'Muara Enim Yard', 'Berau Terminal'][$index % 5],
+                'destination' => ['Cilegon Plant', 'Gresik Plant', 'Tuban Factory', 'Suralaya Power Plant', 'Morowali Smelter'][$index % 5],
+                'status' => $shipmentStatuses[$index % count($shipmentStatuses)],
+            ]);
+        }
+
+        foreach ($receivedPurchaseOrders as [$purchaseOrder, $product, $quantity]) {
+            StockMovement::create([
+                'coal_product_id' => $product->id,
+                'type' => 'in',
+                'quantity' => $quantity,
+                'reference_type' => 'purchase_order',
+                'reference_id' => $purchaseOrder->id,
+                'description' => 'Received stock from ' . $purchaseOrder->po_number,
+            ]);
+        }
+
+        foreach ($fulfilledSalesOrders as [$salesOrder, $product, $quantity]) {
+            StockMovement::create([
+                'coal_product_id' => $product->id,
+                'type' => 'out',
+                'quantity' => $quantity,
+                'reference_type' => 'sales_order',
+                'reference_id' => $salesOrder->id,
+                'description' => 'Issued stock for ' . $salesOrder->so_number,
+            ]);
+        }
     }
 }
