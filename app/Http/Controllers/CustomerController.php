@@ -20,3 +20,57 @@ class CustomerController extends Controller
     }
 
     public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_code' => 'required|string|max:50|unique:customers,customer_code',
+            'name' => 'required|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string',
+        ]);
+
+        Customer::create($validated);
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', 'Customer berhasil ditambahkan.');
+    }
+
+    public function show(Customer $customer)
+    {
+        return view('customers.show', compact('customer'));
+    }
+
+    public function edit(Customer $customer)
+    {
+        return view('customers.edit', compact('customer'));
+    }
+
+    public function update(Request $request, Customer $customer)
+    {
+        $validated = $request->validate([
+            'customer_code' => 'required|string|max:50|unique:customers,customer_code,' . $customer->id,
+            'name' => 'required|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string',
+        ]);
+
+        $customer->update($validated);
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', 'Customer berhasil diperbarui.');
+    }
+
+    public function destroy(Customer $customer)
+    {
+        $customer->delete();
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', 'Customer berhasil dihapus.');
+    }
+}
