@@ -7,11 +7,21 @@ use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $customers = Customer::latest()->paginate(10);
+        $search = $request->string('search')->toString();
+        $customers = Customer::when($search, function ($query) use ($search) {
+                $query->where('customer_code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('contact_person', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('customers.index', compact('customers'));
+        return view('customers.index', compact('customers', 'search'));
     }
 
     public function create()
@@ -21,20 +31,9 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'customer_code' => 'required|string|max:50|unique:customers,customer_code',
-            'name' => 'required|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'address' => 'nullable|string',
-        ]);
-
+        $validated = $this->validateData($request);
         Customer::create($validated);
-
-        return redirect()
-            ->route('customers.index')
-            ->with('success', 'Customer berhasil ditambahkan.');
+        return redirect()->route('customers.index')->with('success', 'Customer has been created successfully.');
     }
 
     public function show(Customer $customer)
@@ -49,28 +48,31 @@ class CustomerController extends Controller
 
     public function update(Request $request, Customer $customer)
     {
-        $validated = $request->validate([
-            'customer_code' => 'required|string|max:50|unique:customers,customer_code,' . $customer->id,
-            'name' => 'required|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'address' => 'nullable|string',
-        ]);
-
+        $validated = $this->validateData($request, $customer->id);
         $customer->update($validated);
-
-        return redirect()
-            ->route('customers.index')
-            ->with('success', 'Customer berhasil diperbarui.');
+        return redirect()->route('customers.index')->with('success', 'Customer has been updated successfully.');
     }
 
     public function destroy(Customer $customer)
     {
         $customer->delete();
+        return redirect()->route('customers.index')->with('success', 'Customer has been deleted successfully.');
+    }
 
-        return redirect()
-            ->route('customers.index')
-            ->with('success', 'Customer berhasil dihapus.');
+    private function validateData(Request $request, ?int $id = null): array
+    {
+        return $request->validate([
+            'customer_code' => 'required|string|max:50|unique:customers,customer_code' . ($id ? ',' . $id : ''),
+            'name' => 'required|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string',
+        ], [
+            'customer_code.required' => 'Customer code is required.',
+            'customer_code.unique' => 'This customer code already exists.',
+            'name.required' => 'Customer name is required.',
+            'email.email' => 'Please enter a valid customer email address.',
+        ]);
     }
 }
