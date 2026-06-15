@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
             Shipment::create([
                 'shipment_number' => sprintf('SHIP-2026-%03d', $index + 1),
                 'sales_order_id' => $salesOrder->id,
-                'vehicle_number' => 'TRK ' . str_pad((string) ($8100 + $index), 4, '0', STR_PAD_LEFT) . ' CL',
+                'vehicle_number' => 'TRK ' . str_pad((string) (8100 + $index), 4, '0', STR_PAD_LEFT) . ' CL',
                 'driver_name' => ['Rahmat Hidayat', 'Arman Putra', 'Doni Saputra', 'Fahri Akbar', 'Rizky Maulana'][$index % 5],
                 'shipment_date' => now()->subDays(18 - $index)->toDateString(),
                 'origin' => ['Samarinda Stockyard', 'Banjarmasin Port', 'Balikpapan Hub', 'Muara Enim Yard', 'Berau Terminal'][$index % 5],
