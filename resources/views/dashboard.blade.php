@@ -1,110 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.app')
 
-<head>
-    <meta charset="UTF-8">
-    <title>SCM Coal Logistics</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
+@section('title', 'Dashboard')
 
-<body class="bg-gray-100 text-gray-900">
-    <div class="min-h-screen">
-        <nav class="bg-slate-900 text-white px-8 py-4">
-            <div class="flex justify-between items-center">
-                <h1 class="text-xl font-bold">SCM Coal Logistics</h1>
-                <div class="space-x-4">
-                    <a href="{{ route('dashboard') }}" class="hover:underline">Dashboard</a>
-                    <a href="{{ route('suppliers.index') }}" class="hover:underline">Suppliers</a>
-                    <a href="{{ route('customers.index') }}" class="hover:underline">Customers</a>
-                    <a href="{{ route('coal-products.index') }}" class="hover:underline">Coal Products</a>
-                </div>
-            </div>
-        </nav>
+@section('content')
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Total Suppliers</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalSuppliers) }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Total Customers</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalCustomers) }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Coal Products</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalProducts) }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Purchase Orders</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalPurchaseOrders) }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Sales Orders</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalSalesOrders) }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Shipments</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalShipments) }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"><p class="text-sm text-gray-500">Stock Movements</p><p class="mt-2 text-3xl font-bold">{{ number_format($totalStockMovements) }}</p></div>
+</div>
 
-        <main class="p-8">
-            <h2 class="text-2xl font-bold mb-6">Dashboard Overview</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-sm text-gray-500">Total Suppliers</p>
-                    <h3 class="text-3xl font-bold">{{ $totalSuppliers }}</h3>
-                </div>
-
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-sm text-gray-500">Total Customers</p>
-                    <h3 class="text-3xl font-bold">{{ $totalCustomers }}</h3>
-                </div>
-
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-sm text-gray-500">Coal Products</p>
-                    <h3 class="text-3xl font-bold">{{ $totalProducts }}</h3>
-                </div>
-
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-sm text-gray-500">Purchase Orders</p>
-                    <h3 class="text-3xl font-bold">{{ $totalPurchaseOrders }}</h3>
-                </div>
-
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-sm text-gray-500">Sales Orders</p>
-                    <h3 class="text-3xl font-bold">{{ $totalSalesOrders }}</h3>
-                </div>
-
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="text-sm text-gray-500">Shipments</p>
-                    <h3 class="text-3xl font-bold">{{ $totalShipments }}</h3>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-bold mb-4">Recent Coal Products</h3>
-
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100 text-left">
-                            <th class="p-3 border">Code</th>
-                            <th class="p-3 border">Name</th>
-                            <th class="p-3 border">Grade</th>
-                            <th class="p-3 border">Stock</th>
-                            <th class="p-3 border">Unit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($products as $product)
-                        <tr>
-                            <td class="p-3 border">{{ $product->product_code }}</td>
-                            <td class="p-3 border">{{ $product->name }}</td>
-                            <td class="p-3 border">{{ $product->grade }}</td>
-                            <td class="p-3 border">{{ number_format($product->stock_qty, 2) }}</td>
-                            <td class="p-3 border">{{ $product->unit }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="p-3 border text-center text-gray-500">
-                                No product data available.
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-bold mb-4">Low Stock Alert</h3>
-
-                @forelse ($lowStockProducts as $product)
-                <div class="p-3 border rounded mb-2">
-                    <strong>{{ $product->name }}</strong>
-                    <span class="text-gray-600">
-                        — {{ number_format($product->stock_qty, 2) }} {{ $product->unit }}
-                    </span>
-                </div>
-                @empty
-                <p class="text-gray-500">No low stock products.</p>
-                @endforelse
-            </div>
-        </main>
+<div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="mb-4 text-lg font-semibold">5 Latest Coal Products</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500"><tr><th class="px-4 py-3">Code</th><th class="px-4 py-3">Name</th><th class="px-4 py-3">Grade</th><th class="px-4 py-3 text-right">Stock</th></tr></thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse ($products as $product)
+                        <tr><td class="px-4 py-3 font-medium">{{ $product->product_code }}</td><td class="px-4 py-3">{{ $product->name }}</td><td class="px-4 py-3">{{ $product->grade ?? '-' }}</td><td class="px-4 py-3 text-right">{{ number_format($product->stock_qty, 2) }} {{ $product->unit }}</td></tr>
+                    @empty
+                        <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">No product data available.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
-</body>
 
-</html>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="mb-4 text-lg font-semibold">Low Stock Alert</h2>
+        @forelse ($lowStockProducts as $product)
+            <div class="mb-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm"><p class="font-semibold text-red-800">{{ $product->name }}</p><p class="text-red-700">Current stock: {{ number_format($product->stock_qty, 2) }} {{ $product->unit }}</p></div>
+        @empty
+            <p class="text-sm text-gray-500">No low stock products.</p>
+        @endforelse
+    </div>
+</div>
+
+<div class="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <h2 class="mb-4 text-lg font-semibold">Shipment Status Summary</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @forelse ($shipmentStatuses as $item)
+            <div class="rounded-lg border border-gray-200 p-4"><p class="text-sm font-medium capitalize text-gray-500">{{ str_replace('_', ' ', $item->status) }}</p><p class="mt-2 text-2xl font-bold">{{ $item->total }}</p></div>
+        @empty
+            <p class="text-sm text-gray-500">No shipment data available.</p>
+        @endforelse
+    </div>
+</div>
+@endsection
