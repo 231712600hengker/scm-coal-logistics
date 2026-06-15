@@ -9,13 +9,16 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->string('search')->toString();
+        $search = trim($request->string('search')->toString());
+
         $suppliers = Supplier::when($search, function ($query) use ($search) {
-                $query->where('supplier_code', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%")
-                    ->orWhere('contact_person', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('supplier_code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('contact_person', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             })
             ->latest()
             ->paginate(10)
@@ -69,10 +72,15 @@ class SupplierController extends Controller
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string',
         ], [
-            'supplier_code.required' => 'Supplier code is required.',
-            'supplier_code.unique' => 'This supplier code already exists.',
+            'supplier_code.required' => 'Supplier code is required. Use a unique code such as SUP-001.',
+            'supplier_code.max' => 'Supplier code may not be longer than 50 characters.',
+            'supplier_code.unique' => 'This supplier code is already used. Please enter a different supplier code.',
             'name.required' => 'Supplier name is required.',
+            'name.max' => 'Supplier name may not be longer than 255 characters.',
+            'contact_person.max' => 'Contact person may not be longer than 255 characters.',
+            'phone.max' => 'Phone number may not be longer than 50 characters.',
             'email.email' => 'Please enter a valid supplier email address.',
+            'email.max' => 'Supplier email may not be longer than 255 characters.',
         ]);
     }
 }
