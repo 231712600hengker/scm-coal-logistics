@@ -2,63 +2,69 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CoalProduct;
 use Illuminate\Http\Request;
 
 class CoalProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $coalProducts = CoalProduct::latest()->paginate(10);
+        return view('coal-products.index', compact('coalProducts'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return view('coal-products.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'product_code' => 'required|string|max:50|unique:coal_products,product_code',
+            'name' => 'required|string|max:255',
+            'grade' => 'nullable|string|max:100',
+            'calorific_value' => 'nullable|numeric',
+            'sulfur_content' => 'nullable|numeric',
+            'ash_content' => 'nullable|numeric',
+            'stock_qty' => 'required|numeric|min:0',
+            'unit' => 'required|string|max:50',
+        ]);
+
+        CoalProduct::create($validated);
+        return redirect()->route('coal-products.index')->with('success', 'Coal product berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(CoalProduct $coalProduct)
     {
-        //
+        return view('coal-products.show', compact('coalProduct'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(CoalProduct $coalProduct)
     {
-        //
+        return view('coal-products.edit', compact('coalProduct'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, CoalProduct $coalProduct)
     {
-        //
+        $validated = $request->validate([
+            'product_code' => 'required|string|max:50|unique:coal_products,product_code,' . $coalProduct->id,
+            'name' => 'required|string|max:255',
+            'grade' => 'nullable|string|max:100',
+            'calorific_value' => 'nullable|numeric',
+            'sulfur_content' => 'nullable|numeric',
+            'ash_content' => 'nullable|numeric',
+            'stock_qty' => 'required|numeric|min:0',
+            'unit' => 'required|string|max:50',
+        ]);
+
+        $coalProduct->update($validated);
+        return redirect()->route('coal-products.index')->with('success', 'Coal product berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(CoalProduct $coalProduct)
     {
-        //
+        $coalProduct->delete();
+        return redirect()->route('coal-products.index')->with('success', 'Coal product berhasil dihapus.');
     }
 }
