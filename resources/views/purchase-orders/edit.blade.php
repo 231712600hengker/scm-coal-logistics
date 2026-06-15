@@ -1,0 +1,14 @@
+@extends('layouts.app')
+@section('title', 'Edit Purchase Order')
+@section('content')
+<form method="POST" action="{{ route('purchase-orders.update', $purchaseOrder) }}" class="rounded-xl border bg-white p-6 shadow-sm">@csrf @method('PUT')
+<div class="grid gap-4 md:grid-cols-2">
+<div><label class="block text-sm font-medium">PO Number</label><input name="po_number" value="{{ old('po_number', $purchaseOrder->po_number) }}" class="w-full rounded border-gray-300">@error('po_number')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+<div><label class="block text-sm font-medium">Supplier</label><select name="supplier_id" class="w-full rounded border-gray-300">@foreach($suppliers as $supplier)<option value="{{ $supplier->id }}" @selected(old('supplier_id', $purchaseOrder->supplier_id) == $supplier->id)>{{ $supplier->name }}</option>@endforeach</select>@error('supplier_id')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+<div><label class="block text-sm font-medium">Coal Product</label><select name="coal_product_id" class="w-full rounded border-gray-300">@foreach($coalProducts as $product)<option value="{{ $product->id }}" @selected(old('coal_product_id', $purchaseOrder->coal_product_id) == $product->id)>{{ $product->product_code }} - {{ $product->name }}</option>@endforeach</select>@error('coal_product_id')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+<div><label class="block text-sm font-medium">Order Date</label><input type="date" name="order_date" value="{{ old('order_date', $purchaseOrder->order_date) }}" class="w-full rounded border-gray-300">@error('order_date')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+<div><label class="block text-sm font-medium">Quantity</label><input type="number" step="0.01" name="quantity" value="{{ old('quantity', $purchaseOrder->quantity) }}" class="w-full rounded border-gray-300">@error('quantity')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+<div><label class="block text-sm font-medium">Price Per Ton</label><input type="number" step="0.01" name="price_per_ton" value="{{ old('price_per_ton', $purchaseOrder->price_per_ton) }}" class="w-full rounded border-gray-300">@error('price_per_ton')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+<div><label class="block text-sm font-medium">Status</label><select name="status" class="w-full rounded border-gray-300">@foreach(['pending','approved','received','cancelled'] as $status)<option value="{{ $status }}" @selected(old('status', $purchaseOrder->status) == $status)>{{ ucfirst($status) }}</option>@endforeach</select>@error('status')<p class="text-sm text-red-600">{{ $message }}</p>@enderror</div>
+</div><div class="mt-6 flex gap-2"><button class="rounded bg-gray-900 px-4 py-2 text-white">Update</button><a href="{{ route('purchase-orders.index') }}" class="rounded border px-4 py-2">Cancel</a></div></form>
+@endsection
