@@ -7,6 +7,8 @@ use App\Models\PurchaseOrder;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PurchaseOrderController extends Controller
 {
@@ -40,8 +42,12 @@ class PurchaseOrderController extends Controller
     {
         $validated = $this->validateData($request);
         $validated['total_amount'] = $validated['quantity'] * $validated['price_per_ton'];
-        $purchaseOrder = PurchaseOrder::create($validated);
-        $this->receiveStockIfNeeded($purchaseOrder);
+
+        DB::transaction(function () use ($validated) {
+            $purchaseOrder = PurchaseOrder::create($validated);
+            $this->receiveStockIfNeeded($purchaseOrder);
+        });
+
         return redirect()->route('purchase-orders.index')->with('success', 'Purchase order has been created successfully.');
     }
 
@@ -59,9 +65,14 @@ class PurchaseOrderController extends Controller
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
         $validated = $this->validateData($request, $purchaseOrder->id);
+        $this->validateStatusTransition($purchaseOrder->status, $validated['status']);
         $validated['total_amount'] = $validated['quantity'] * $validated['price_per_ton'];
-        $purchaseOrder->update($validated);
-        $this->receiveStockIfNeeded($purchaseOrder->fresh());
+
+        DB::transaction(function () use ($purchaseOrder, $validated) {
+            $purchaseOrder->update($validated);
+            $this->receiveStockIfNeeded($purchaseOrder->fresh());
+        });
+
         return redirect()->route('purchase-orders.index')->with('success', 'Purchase order has been updated successfully.');
     }
 
@@ -99,6 +110,22 @@ class PurchaseOrderController extends Controller
             'status.required' => 'Please select a purchase order status.',
             'status.in' => 'Purchase order status is invalid.',
         ]);
+    }
+
+    private function validateStatusTransition(string $currentStatus, string $nextStatus): void
+    {
+        $allowedTransitions = [
+            'pending' => ['pending', 'approved', 'cancelled'],
+            'approved' => ['approved', 'received', 'cancelled'],
+            'received' => ['received'],
+            'cancelled' => ['cancelled'],
+        ];
+
+        if (! in_array($nextStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Invalid status transition. Purchase order workflow must follow pending → approved → received.',
+            ]);
+        }
     }
 
     private function receiveStockIfNeeded(PurchaseOrder $purchaseOrder): void
