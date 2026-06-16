@@ -15,11 +15,13 @@
             table { font-size: 11px; }
         }
 
+        .sidebar-short { display: none; }
         #sidebar-toggle:checked ~ .app-sidebar { width: 5rem; }
         #sidebar-toggle:checked ~ .app-shell { padding-left: 5rem; }
         #sidebar-toggle:checked ~ .app-sidebar .sidebar-text,
         #sidebar-toggle:checked ~ .app-sidebar .sidebar-section-title,
         #sidebar-toggle:checked ~ .app-sidebar .sidebar-user { display: none; }
+        #sidebar-toggle:checked ~ .app-sidebar .sidebar-short { display: inline; }
         #sidebar-toggle:checked ~ .app-sidebar .sidebar-nav-link { justify-content: center; }
 
         @media (max-width: 1023px) {
@@ -29,6 +31,7 @@
             #sidebar-toggle:checked ~ .app-sidebar .sidebar-text,
             #sidebar-toggle:checked ~ .app-sidebar .sidebar-section-title,
             #sidebar-toggle:checked ~ .app-sidebar .sidebar-user { display: block; }
+            #sidebar-toggle:checked ~ .app-sidebar .sidebar-short { display: none; }
             #sidebar-toggle:checked ~ .app-sidebar .sidebar-nav-link { justify-content: flex-start; }
             .app-shell { padding-left: 0 !important; }
         }
@@ -121,7 +124,7 @@
                     @csrf
                     <button type="submit" class="flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-gray-950">
                         <span class="sidebar-text">Logout</span>
-                        <span class="hidden text-xs font-bold lg:inline">OUT</span>
+                        <span class="sidebar-short text-xs font-bold">OUT</span>
                     </button>
                 </form>
             </div>
