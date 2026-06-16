@@ -5,7 +5,7 @@
 @section('page-actions')
 <div class="no-print flex items-center gap-3">
     <button onclick="window.print()" class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700">
-        Print Dashboard
+        Print / Save PDF
     </button>
 </div>
 @endsection
