@@ -24,6 +24,40 @@
         #sidebar-toggle:checked ~ .app-sidebar .sidebar-short { display: inline; }
         #sidebar-toggle:checked ~ .app-sidebar .sidebar-nav-link { justify-content: center; }
 
+        .skeleton-line,
+        .skeleton-card,
+        .skeleton-pill {
+            position: relative;
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+
+        .skeleton-line::after,
+        .skeleton-card::after,
+        .skeleton-pill::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+            animation: skeleton-loading 1.1s infinite;
+        }
+
+        @keyframes skeleton-loading {
+            100% { transform: translateX(100%); }
+        }
+
+        .page-loading {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s ease-in-out;
+        }
+
+        .page-loading.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         @media (max-width: 1023px) {
             .app-sidebar { transform: translateX(-100%); }
             #sidebar-toggle:checked ~ .app-sidebar { width: 18rem; transform: translateX(0); }
@@ -62,6 +96,30 @@
             ],
         ];
     @endphp
+
+    <div id="page-loading" class="page-loading no-print fixed inset-0 z-50 bg-gray-100/90 backdrop-blur-sm" aria-hidden="true">
+        <div class="flex min-h-screen items-center justify-center px-6">
+            <div class="w-full max-w-3xl rounded-3xl border border-gray-200 bg-white p-6 shadow-xl">
+                <div class="mb-6 flex items-center gap-3">
+                    <div class="skeleton-pill h-12 w-12 rounded-2xl"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="skeleton-line h-4 w-48 rounded-full"></div>
+                        <div class="skeleton-line h-3 w-72 rounded-full"></div>
+                    </div>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="skeleton-card h-28 rounded-2xl"></div>
+                    <div class="skeleton-card h-28 rounded-2xl"></div>
+                    <div class="skeleton-card h-28 rounded-2xl"></div>
+                </div>
+                <div class="mt-5 space-y-3">
+                    <div class="skeleton-line h-4 rounded-full"></div>
+                    <div class="skeleton-line h-4 w-11/12 rounded-full"></div>
+                    <div class="skeleton-line h-4 w-8/12 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <input id="sidebar-toggle" type="checkbox" class="peer sr-only">
     <label for="sidebar-toggle" class="sidebar-backdrop no-print fixed inset-0 z-30 hidden bg-gray-950/40 lg:hidden"></label>
