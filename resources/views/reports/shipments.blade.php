@@ -51,7 +51,7 @@
                 <tbody class="divide-y divide-gray-100">
                     @forelse ($shipments as $shipment)
                         <tr>
-                            <td class="px-4 py-3">{{ optional($shipment->shipment_date)->format('d M Y') ?? $shipment->shipment_date }}</td>
+                            <td class="px-4 py-3">{{ $shipment->shipment_date ? \Carbon\Carbon::parse($shipment->shipment_date)->format('d M Y') : '-' }}</td>
                             <td class="px-4 py-3 font-medium text-gray-900">{{ $shipment->shipment_number }}</td>
                             <td class="px-4 py-3">{{ $shipment->salesOrder->so_number ?? '-' }}</td>
                             <td class="px-4 py-3">{{ $shipment->salesOrder->customer->name ?? '-' }}</td>
