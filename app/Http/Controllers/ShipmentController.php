@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SalesOrder;
 use App\Models\Shipment;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ShipmentController extends Controller
 {
@@ -61,6 +62,7 @@ class ShipmentController extends Controller
     public function update(Request $request, Shipment $shipment)
     {
         $validated = $this->validateData($request, $shipment->id);
+        $this->validateStatusTransition($shipment->status, $validated['status']);
         $shipment->update($validated);
         return redirect()->route('shipments.index')->with('success', 'Shipment has been updated successfully.');
     }
@@ -96,5 +98,21 @@ class ShipmentController extends Controller
             'status.required' => 'Please select a shipment status.',
             'status.in' => 'Shipment status is invalid.',
         ]);
+    }
+
+    private function validateStatusTransition(string $currentStatus, string $nextStatus): void
+    {
+        $allowedTransitions = [
+            'scheduled' => ['scheduled', 'in_transit', 'cancelled'],
+            'in_transit' => ['in_transit', 'delivered', 'cancelled'],
+            'delivered' => ['delivered'],
+            'cancelled' => ['cancelled'],
+        ];
+
+        if (! in_array($nextStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Invalid status transition. Shipment workflow must follow scheduled → in transit → delivered.',
+            ]);
+        }
     }
 }
