@@ -64,6 +64,8 @@
         </div>
     </div>
 
+    @include('dashboard.partials.charts')
+
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="print-card rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div class="mb-5 flex items-center justify-between">
